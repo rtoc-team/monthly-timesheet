@@ -1,0 +1,1116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>EFTECH Energy Solutions — Monthly Timesheet</title>
+<!-- JSZip replaced by inline MiniZip — no external dependencies -->
+<style>
+  :root {
+    --green:       #4CAF50;
+    --green-dark:  #388E3C;
+    --green-hover: #43A047;
+    --green-light: #F1F8E9;
+    --green-mid:   #C8E6C9;
+    --green-pale:  #E8F5E9;
+    --indigo:      #3949AB;
+    --indigo-light:#E8EAF6;
+    --red:         #E53935;
+    --gray:        #607D8B;
+    --gray-light:  #ECEFF1;
+    --border:      #DCEDC8;
+    --shadow:      0 2px 10px rgba(0,0,0,.10);
+    --white:       #fff;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Segoe UI',Arial,sans-serif;background:#F9FBF9;color:#263238;min-height:100vh}
+
+  /* ── Top bar ── */
+  .topbar{
+    background:var(--green);color:#fff;
+    padding:0 24px;display:flex;align-items:stretch;
+    justify-content:space-between;box-shadow:var(--shadow);min-height:56px;
+  }
+  /* "DEVELOPED BY" block — left-most, like the drilling report style */
+  .topbar-devblock{
+    display:flex;flex-direction:column;justify-content:center;
+    padding:10px 18px 10px 0;border-right:1px solid rgba(255,255,255,.25);
+    margin-right:18px;min-width:130px;
+  }
+  .topbar-devblock .dev-label{
+    font-size:.52rem;font-weight:600;letter-spacing:1.2px;
+    text-transform:uppercase;color:rgba(255,255,255,.22);margin-bottom:1px;
+  }
+  .topbar-devblock .dev-name{
+    font-size:.72rem;font-weight:600;letter-spacing:.1px;line-height:1.15;
+    color:rgba(255,255,255,.22);
+  }
+  .topbar-devblock .dev-role{
+    font-size:.62rem;font-style:italic;letter-spacing:.2px;margin-top:1px;
+    color:rgba(255,255,255,.22);
+  }
+  /* dollar icon + title group */
+  .topbar-center{display:flex;align-items:center;gap:14px;flex:1}
+  .dollar-icon{
+    width:40px;height:40px;border-radius:50%;
+    background:rgba(255,255,255,.18);border:2px solid rgba(255,255,255,.35);
+    display:flex;align-items:center;justify-content:center;
+    font-size:1.4rem;font-weight:900;flex-shrink:0;
+  }
+  .topbar-center h1{font-size:1.18rem;font-weight:800;letter-spacing:.3px;line-height:1.2;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.2)}
+  .topbar-right{display:flex;flex-direction:column;align-items:flex-end;justify-content:center;gap:3px}
+  .topbar-badge{
+    background:rgba(255,255,255,.22);border:1px solid rgba(255,255,255,.35);
+    border-radius:12px;padding:3px 14px;font-size:.78rem;font-weight:700;letter-spacing:.5px;
+  }
+
+  /* ── Layout ── */
+  .layout{display:grid;grid-template-columns:295px 1fr;gap:16px;padding:16px;max-width:1320px;margin:0 auto}
+  @media(max-width:820px){.layout{grid-template-columns:1fr}}
+
+  /* ── Card ── */
+  .card{background:#fff;border-radius:10px;box-shadow:var(--shadow);overflow:hidden;margin-bottom:14px}
+  .card-header{
+    background:var(--green);color:#fff;
+    padding:9px 16px;font-size:.8rem;font-weight:700;
+    letter-spacing:.5px;text-transform:uppercase;
+    display:flex;align-items:center;gap:7px;
+  }
+  .card-body{padding:14px 16px}
+
+  /* ── Form fields ── */
+  .field{margin-bottom:10px}
+  .field label{display:block;font-size:.7rem;font-weight:700;color:var(--gray);margin-bottom:3px;text-transform:uppercase;letter-spacing:.5px}
+  .field input,.field select{
+    width:100%;border:1.5px solid var(--border);border-radius:6px;
+    padding:7px 10px;font-size:.87rem;outline:none;
+    transition:border .2s,box-shadow .2s;background:#FEFFFE;
+  }
+  .field input:focus,.field select:focus{border-color:var(--green);box-shadow:0 0 0 3px rgba(76,175,80,.12)}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .divider{border:none;border-top:1px solid var(--border);margin:11px 0}
+
+  /* ── Hardship default setter ── */
+  .hrd-setter{
+    display:flex;align-items:center;gap:8px;
+    background:var(--green-light);border:1.5px solid var(--green-mid);
+    border-radius:8px;padding:10px 12px;margin-bottom:12px;
+  }
+  .hrd-setter label{font-size:.77rem;font-weight:700;color:var(--green-dark);flex:1;line-height:1.3}
+  .hrd-setter input{
+    width:100px;border:1.5px solid var(--green-mid);border-radius:6px;
+    padding:6px 8px;font-size:.88rem;text-align:right;outline:none;
+    background:#fff;font-weight:600;color:var(--green-dark);
+    transition:border .2s;
+  }
+  .hrd-setter input:focus{border-color:var(--green)}
+  .hrd-setter button{
+    background:var(--green);color:#fff;border:none;border-radius:6px;
+    padding:6px 12px;font-size:.78rem;font-weight:700;cursor:pointer;
+    white-space:nowrap;transition:background .2s;
+  }
+  .hrd-setter button:hover{background:var(--green-dark)}
+
+  /* ── Month picker ── */
+  .month-picker{display:flex;align-items:center;gap:8px;margin-bottom:0}
+  .month-picker select{
+    flex:1;border:1.5px solid var(--border);border-radius:6px;
+    padding:7px 10px;font-size:.9rem;font-weight:600;outline:none;background:#FEFFFE;
+  }
+  .month-picker select:focus{border-color:var(--green)}
+
+  /* ── Schedule table ── */
+  .sched-wrap{overflow-x:auto}
+  table.sched{width:100%;border-collapse:collapse;font-size:.82rem}
+  table.sched th{
+    background:var(--green);color:#fff;
+    padding:8px 6px;text-align:center;
+    font-weight:700;font-size:.74rem;letter-spacing:.3px;
+  }
+  table.sched td{padding:5px 4px;text-align:center;border-bottom:1px solid #F1F8E9}
+  table.sched tr:nth-child(even) td{background:#FAFFFE}
+  table.sched tr.row-d td{background:#F1F8E9}
+  table.sched tr.row-n td{background:#EEF0FB}
+  .day-num{font-weight:700;color:var(--green-dark);min-width:28px}
+  .day-name{color:var(--gray);font-size:.77rem}
+  .day-name.weekend{color:var(--red)}
+
+  /* ── Shift badge ── */
+  .shift-btn{
+    display:inline-flex;align-items:center;justify-content:center;
+    width:50px;height:28px;border-radius:6px;cursor:pointer;
+    font-weight:800;font-size:.8rem;letter-spacing:.6px;user-select:none;
+    border:2px solid transparent;transition:transform .1s,box-shadow .1s;
+  }
+  .shift-btn:hover{transform:scale(1.1);box-shadow:0 2px 8px rgba(0,0,0,.18)}
+  .shift-btn:active{transform:scale(.95)}
+  .s-off{background:#ECEFF1;color:#90A4AE;border-color:#CFD8DC}
+  .s-d  {background:#E8F5E9;color:#2E7D32;border-color:#A5D6A7}
+  .s-n  {background:#E8EAF6;color:#283593;border-color:#9FA8DA}
+
+  /* ── Expense inputs ── */
+  .exp-input{
+    width:90px;border:1.5px solid var(--border);border-radius:5px;
+    padding:5px 6px;font-size:.8rem;text-align:right;outline:none;
+    background:#fff;transition:border .2s,box-shadow .2s;
+  }
+  .exp-input:focus{border-color:var(--green);box-shadow:0 0 0 3px rgba(76,175,80,.1)}
+  .exp-input:disabled{background:#F5F5F5;color:#BDBDBD;cursor:not-allowed;border-color:#EEE}
+  .exp-input.hrd-set{background:#F1F8E9;border-color:#A5D6A7;color:#2E7D32;font-weight:600}
+
+  /* ── Legend ── */
+  .legend{display:flex;flex-wrap:wrap;gap:8px}
+  .legend-item{display:inline-flex;align-items:center;gap:5px;font-size:.74rem;color:#607D8B;font-weight:600}
+  .legend-dot{width:13px;height:13px;border-radius:3px;border:2px solid transparent}
+
+  /* ── Summary banner ── */
+  .summary{
+    background:linear-gradient(135deg,var(--green),var(--green-dark));
+    color:#fff;border-radius:10px;padding:14px 18px;
+    display:flex;align-items:center;gap:16px;flex-wrap:wrap;
+    box-shadow:var(--shadow);margin-bottom:14px;
+  }
+  .sum-big{font-size:2.4rem;font-weight:800;line-height:1}
+  .sum-label{font-size:.76rem;opacity:.85;margin-top:2px}
+  .sum-chips{display:flex;flex-wrap:wrap;gap:6px;margin-left:auto}
+  .chip{background:rgba(255,255,255,.2);border-radius:20px;padding:4px 11px;font-size:.73rem;font-weight:600}
+
+  /* ── Totals row ── */
+  .totals-row{display:flex;gap:12px;margin-bottom:14px;flex-wrap:wrap}
+  .total-box{flex:1;min-width:130px;background:#fff;border:1.5px solid var(--green-mid);border-radius:9px;padding:10px 14px;box-shadow:var(--shadow)}
+  .total-box .t-label{font-size:.68rem;font-weight:700;color:var(--gray);text-transform:uppercase;letter-spacing:.5px}
+  .total-box .t-val{font-size:1.3rem;font-weight:800;color:var(--green-dark);margin-top:4px}
+
+  /* ── Buttons ── */
+  .btn-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+  .btn{display:inline-flex;align-items:center;gap:7px;padding:9px 18px;border-radius:7px;border:none;cursor:pointer;font-size:.87rem;font-weight:700;letter-spacing:.3px;transition:all .2s}
+  .btn-primary{background:var(--green);color:#fff}
+  .btn-primary:hover{background:var(--green-dark)}
+  .btn-email{background:#fff;color:var(--green-dark);border:2px solid var(--green)}
+  .btn-email:hover{background:var(--green-pale)}
+  .btn-reset{background:#fff;color:var(--gray);border:2px solid var(--border)}
+  .btn-reset:hover{background:var(--gray-light)}
+
+  /* ── Note bar ── */
+  .note{background:var(--green-light);border-left:3px solid var(--green);padding:8px 11px;border-radius:5px;font-size:.77rem;color:var(--green-dark);margin-top:10px;line-height:1.5}
+
+  /* ── Toast ── */
+  #toast{position:fixed;bottom:24px;right:24px;background:#2E7D32;color:#fff;padding:12px 20px;border-radius:8px;font-size:.88rem;opacity:0;transition:opacity .3s;pointer-events:none;z-index:999;box-shadow:var(--shadow)}
+  #toast.show{opacity:1}
+</style>
+<script>
+// ═══════════════════════════════════════════════════════════════════════════
+// MiniZip — inline ZIP r/w using native DecompressionStream/CompressionStream
+// Replaces JSZip with zero external dependencies. API mirrors JSZip subset.
+// ═══════════════════════════════════════════════════════════════════════════
+const MiniZip={
+  // ── CRC-32 ──────────────────────────────────────────────────────────────
+  _ct:null,
+  _initCRC(){
+    if(this._ct)return;
+    const t=new Uint32Array(256);
+    for(let i=0;i<256;i++){let c=i;for(let j=0;j<8;j++)c=(c&1)?(0xEDB88320^(c>>>1)):(c>>>1);t[i]=c;}
+    this._ct=t;
+  },
+  crc32(buf){
+    this._initCRC();const t=this._ct;let c=0xFFFFFFFF;
+    for(let i=0;i<buf.length;i++)c=(c>>>8)^t[(c^buf[i])&0xFF];
+    return(c^0xFFFFFFFF)>>>0;
+  },
+  // ── DataView helpers ─────────────────────────────────────────────────────
+  _r16(dv,o){return dv.getUint16(o,true);},
+  _r32(dv,o){return dv.getUint32(o,true);},
+  _w16(dv,o,v){dv.setUint16(o,v,true);},
+  _w32(dv,o,v){dv.setUint32(o,v,true);},
+  // ── DEFLATE/INFLATE via native streams ───────────────────────────────────
+  async _inflate(data){
+    const ds=new DecompressionStream('deflate-raw');
+    const w=ds.writable.getWriter(),r=ds.readable.getReader();
+    w.write(data);w.close();
+    const chunks=[];let len=0;
+    for(;;){const{done,value}=await r.read();if(done)break;chunks.push(value);len+=value.length;}
+    const out=new Uint8Array(len);let off=0;
+    for(const c of chunks){out.set(c,off);off+=c.length;}
+    return out;
+  },
+  async _deflate(raw){
+    const data=raw instanceof Uint8Array?raw:new TextEncoder().encode(raw);
+    const cs=new CompressionStream('deflate-raw');
+    const w=cs.writable.getWriter(),r=cs.readable.getReader();
+    w.write(data);w.close();
+    const chunks=[];let len=0;
+    for(;;){const{done,value}=await r.read();if(done)break;chunks.push(value);len+=value.length;}
+    const out=new Uint8Array(len);let off=0;
+    for(const c of chunks){out.set(c,off);off+=c.length;}
+    return out;
+  },
+  // ── Load ZIP binary ──────────────────────────────────────────────────────
+  async load(u8){
+    const dv=new DataView(u8.buffer,u8.byteOffset,u8.byteLength);
+    // Find End of Central Directory record
+    let eocd=-1;
+    for(let i=u8.length-22;i>=0;i--){if(this._r32(dv,i)===0x06054B50){eocd=i;break;}}
+    if(eocd<0)throw new Error('Invalid ZIP');
+    const cdOff=this._r32(dv,eocd+16),cdCnt=this._r16(dv,eocd+8);
+    // Parse central directory
+    const entries={};let pos=cdOff;
+    for(let i=0;i<cdCnt;i++){
+      if(this._r32(dv,pos)!==0x02014B50)break;
+      const method=this._r16(dv,pos+10);
+      const fnLen=this._r16(dv,pos+28),exLen=this._r16(dv,pos+30),cmLen=this._r16(dv,pos+32);
+      const lOff=this._r32(dv,pos+42);
+      const name=new TextDecoder().decode(u8.slice(pos+46,pos+46+fnLen));
+      // Local file header
+      const lfnLen=this._r16(dv,lOff+26),lexLen=this._r16(dv,lOff+28);
+      const dStart=lOff+30+lfnLen+lexLen;
+      const cSize=this._r32(dv,lOff+18),uSize=this._r32(dv,lOff+22),crc=this._r32(dv,lOff+14);
+      entries[name]={method,compData:u8.slice(dStart,dStart+cSize),uSize,crc};
+      pos+=46+fnLen+exLen+cmLen;
+    }
+    const overrides={},self=this;
+    return{
+      // ── Read a file (returns object with .async()) ──────────────────────
+      file(name,content){
+        if(content===undefined){
+          const zip=this;
+          return{async async(type){
+            let raw;
+            if(overrides[name]!==undefined){
+              const v=overrides[name];
+              raw=v instanceof Uint8Array?v:new TextEncoder().encode(v);
+            } else if(entries[name]){
+              const e=entries[name];
+              raw=e.method===0?e.compData:await self._inflate(e.compData);
+            } else return null;
+            return type==='string'?new TextDecoder().decode(raw):raw;
+          }};
+        }
+        // Write / override a file
+        overrides[name]=content;
+        return this;
+      },
+      // ── Generate ZIP blob ───────────────────────────────────────────────
+      async generateAsync({type,mimeType,compression}){
+        const enc=new TextEncoder();
+        const allNames=[...new Set([...Object.keys(entries),...Object.keys(overrides)])];
+        const lfhs=[],cds=[];let offset=0;
+        for(const name of allNames){
+          // Get uncompressed raw bytes
+          let raw;
+          if(overrides[name]!==undefined){
+            const v=overrides[name];
+            raw=v instanceof Uint8Array?v:enc.encode(v);
+          } else {
+            const e=entries[name];
+            raw=e.method===0?e.compData:await self._inflate(e.compData);
+          }
+          const uSize=raw.length,crc=self.crc32(raw);
+          let compData,method;
+          if(compression==='DEFLATE'){compData=await self._deflate(raw);method=8;}
+          else{compData=raw;method=0;}
+          const nb=enc.encode(name);
+          // Local file header (30 + name)
+          const lfh=new Uint8Array(30+nb.length);const lv=new DataView(lfh.buffer);
+          self._w32(lv,0,0x04034B50);self._w16(lv,4,20);self._w16(lv,6,0);
+          self._w16(lv,8,method);self._w16(lv,10,0);self._w16(lv,12,0);
+          self._w32(lv,14,crc);self._w32(lv,18,compData.length);self._w32(lv,22,uSize);
+          self._w16(lv,26,nb.length);self._w16(lv,28,0);lfh.set(nb,30);
+          // Central directory record (46 + name)
+          const cdr=new Uint8Array(46+nb.length);const cv=new DataView(cdr.buffer);
+          self._w32(cv,0,0x02014B50);self._w16(cv,4,20);self._w16(cv,6,20);
+          self._w16(cv,8,0);self._w16(cv,10,method);self._w16(cv,12,0);self._w16(cv,14,0);
+          self._w32(cv,16,crc);self._w32(cv,20,compData.length);self._w32(cv,24,uSize);
+          self._w16(cv,28,nb.length);self._w16(cv,30,0);self._w16(cv,32,0);
+          self._w16(cv,34,0);self._w16(cv,36,0);self._w32(cv,38,0);self._w32(cv,42,offset);
+          cdr.set(nb,46);
+          lfhs.push(lfh,compData);cds.push(cdr);
+          offset+=30+nb.length+compData.length;
+        }
+        // End of Central Directory
+        const cdSize=cds.reduce((s,r)=>s+r.length,0);
+        const eocdBuf=new Uint8Array(22);const ev=new DataView(eocdBuf.buffer);
+        self._w32(ev,0,0x06054B50);self._w16(ev,4,0);self._w16(ev,6,0);
+        self._w16(ev,8,cds.length);self._w16(ev,10,cds.length);
+        self._w32(ev,12,cdSize);self._w32(ev,16,offset);self._w16(ev,20,0);
+        const parts=[...lfhs,...cds,eocdBuf];
+        const total=parts.reduce((s,p)=>s+p.length,0);
+        const out=new Uint8Array(total);let p=0;
+        for(const chunk of parts){out.set(chunk,p);p+=chunk.length;}
+        const mime=mimeType||'application/octet-stream';
+        return type==='blob'?new Blob([out],{type:mime}):out;
+      }
+    };
+  }
+};
+</script>
+</head>
+<body>
+
+<!-- ══════════════ TOP BAR ══════════════ -->
+<div class="topbar">
+
+  <!-- DEVELOPED BY block (far left, like drilling report generator) -->
+  <div class="topbar-devblock">
+    <span class="dev-label">Developed By</span>
+    <span class="dev-name">Syafiq Nazmi Zainal</span>
+    <span class="dev-role">RTO Engineer &nbsp;·&nbsp; RTOC</span>
+  </div>
+
+  <!-- Dollar icon + Title -->
+  <div class="topbar-center">
+    <div class="dollar-icon">$</div>
+    <h1>EFTECH Energy Solutions — Monthly Timesheet</h1>
+  </div>
+
+  <!-- RIGHT: badge -->
+  <div class="topbar-right">
+    <span class="topbar-badge">Timesheet Form</span>
+  </div>
+
+</div>
+
+<!-- ══════════════ MAIN LAYOUT ══════════════ -->
+<div class="layout">
+
+  <!-- ═══ LEFT PANEL ═══ -->
+  <div>
+
+    <!-- Month / Year -->
+    <div class="card">
+      <div class="card-header">💰 Target Month</div>
+      <div class="card-body">
+        <div class="month-picker">
+          <select id="selMonth">
+            <option value="1">January</option><option value="2">February</option>
+            <option value="3">March</option><option value="4">April</option>
+            <option value="5">May</option><option value="6">June</option>
+            <option value="7">July</option><option value="8">August</option>
+            <option value="9">September</option><option value="10">October</option>
+            <option value="11">November</option><option value="12" selected>December</option>
+          </select>
+          <select id="selYear" style="width:94px"></select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Employee Details -->
+    <div class="card">
+      <div class="card-header">👤 Employee Details</div>
+      <div class="card-body">
+        <div class="field"><label>Full Name</label>
+          <select id="empName" onchange="onNameChange()">
+            <option value="">— Select Name —</option>
+            <option value="Ong Teck Ghee">Ong Teck Ghee</option>
+            <option value="Mohd Haiqal Bin Hashim">Mohd Haiqal Bin Hashim</option>
+            <option value="Mohamad Adri Bin Mat Junoh">Mohamad Adri Bin Mat Junoh</option>
+            <option value="Jau Ipui">Jau Ipui</option>
+            <option value="Mohd Amiruddin Bin Abd Shukor">Mohd Amiruddin Bin Abd Shukor</option>
+            <option value="Syafiq Nazmi Bin Zainal" selected>Syafiq Nazmi Bin Zainal</option>
+            <option value="Ilyas Bin Ismal">Ilyas Bin Ismal</option>
+            <option value="Ahmad Yazid Aiman Bin Yahya">Ahmad Yazid Aiman Bin Yahya</option>
+          </select>
+        </div>
+        <div class="row2">
+          <div class="field"><label>Title</label>
+            <select id="empTitle">
+              <option value="RTO Engineer" selected>RTO Engineer</option>
+              <option value="Real Time Monitoring Specialist (RTMS)">Real Time Monitoring Specialist (RTMS)</option>
+            </select>
+          </div>
+          <div class="field"><label>Grade</label>
+            <select id="empGrade">
+              <option value="RTD1">RTD1</option>
+              <option value="RTD2">RTD2</option>
+              <option value="RTD3">RTD3</option>
+              <option value="RTD4">RTD4</option>
+              <option value="RTO1">RTO1</option>
+              <option value="RTO2" selected>RTO2</option>
+              <option value="RTO3">RTO3</option>
+              <option value="RTO4">RTO4</option>
+            </select>
+          </div>
+        </div>
+        <div class="field"><label>Job Description</label><input id="empJob" value="Real Time Operation_12 hours shift (PTTEP)"/></div>
+        <div class="field"><label>Location</label><input id="empLoc" value="Halliburton RTOC, L-10, G Tower"/></div>
+      </div>
+    </div>
+
+    <!-- Expenses Config -->
+    <div class="card">
+      <div class="card-header">💵 Expenses Configuration</div>
+      <div class="card-body">
+        <div class="hrd-setter">
+          <label>Default Daily Hardship<br/>Rate (RM) — applied to all D &amp; N days</label>
+          <input type="number" id="defaultHardship" min="0" step="0.01" placeholder="0.00" value=""/>
+          <button onclick="applyDefaultHardship()">Apply All</button>
+        </div>
+        <div style="font-size:.73rem;color:#78909C;margin-top:-4px;margin-bottom:2px">
+          ℹ️ Set the rate above and click <b>Apply All</b> to auto-fill all working days. You can still edit each day individually.
+        </div>
+      </div>
+    </div>
+
+    <!-- Sign-Off -->
+    <div class="card">
+      <div class="card-header">✍️ Sign-Off</div>
+      <div class="card-body">
+        <div class="field"><label>Checked By</label><input id="checkedBy" value="Ong Teck Ghee"/></div>
+        <div class="field"><label>Position</label><input id="checkedPos" value="Team Lead Dos"/></div>
+        <div class="field"><label>Checked Date</label><input id="checkedDate" type="date"/></div>
+        <hr class="divider"/>
+        <div class="field"><label>Approved By</label><input id="approvedBy" value="Jaafar Nordin"/></div>
+        <div class="field"><label>Position</label><input id="approvedPos" value="Head of Operation Support"/></div>
+        <div class="field"><label>Approved Date</label><input id="approvedDate" type="date"/></div>
+        <hr class="divider"/>
+        <div class="field"><label>Manager Email</label><input id="mgrEmail" placeholder="manager@halliburton.com" type="email"/></div>
+      </div>
+    </div>
+
+  </div><!-- /left -->
+
+  <!-- ═══ RIGHT PANEL ═══ -->
+  <div>
+
+    <!-- Summary -->
+    <div class="summary">
+      <div>
+        <div class="sum-big" id="sumHitch">0</div>
+        <div class="sum-label">Days on Hitch</div>
+      </div>
+      <div style="opacity:.88;font-size:.84rem;line-height:1.9" id="sumDetail">—</div>
+      <div class="sum-chips" id="sumChips"></div>
+    </div>
+
+    <!-- Totals -->
+    <div class="totals-row">
+      <div class="total-box">
+        <div class="t-label">Hardship Total (RM)</div>
+        <div class="t-val" id="totalHardship">0.00</div>
+      </div>
+      <div class="total-box">
+        <div class="t-label">Bonus Total (RM)</div>
+        <div class="t-val" id="totalBonus">0.00</div>
+      </div>
+      <div class="total-box">
+        <div class="t-label">Grand Total (RM)</div>
+        <div class="t-val" id="totalGrand">0.00</div>
+      </div>
+    </div>
+
+    <!-- Schedule -->
+    <div class="card">
+      <div class="card-header" style="justify-content:space-between;flex-wrap:wrap;gap:8px">
+        <span>💰 Working Schedule — Click to toggle: D · N · OFF</span>
+        <div class="legend">
+          <span class="legend-item"><span class="legend-dot" style="background:#E8F5E9;border-color:#A5D6A7"></span>D Day</span>
+          <span class="legend-item"><span class="legend-dot" style="background:#E8EAF6;border-color:#9FA8DA"></span>N Night</span>
+          <span class="legend-item"><span class="legend-dot" style="background:#ECEFF1;border-color:#CFD8DC"></span>OFF</span>
+        </div>
+      </div>
+      <div class="card-body">
+
+        <div class="sched-wrap">
+          <table class="sched">
+            <thead>
+              <tr>
+                <th style="width:36px">Date</th>
+                <th style="width:46px">Day</th>
+                <th style="width:68px">Shift</th>
+                <th style="width:112px">Daily Hardship<br/>Expenses (RM)</th>
+                <th style="width:112px">Additional<br/>Bonus (RM)</th>
+                <th>Remarks / Description</th>
+              </tr>
+            </thead>
+            <tbody id="schedBody"></tbody>
+          </table>
+        </div>
+
+        <div class="note" id="remarkNote">—</div>
+
+        <div class="btn-row">
+          <button class="btn btn-primary" onclick="downloadXLSX()">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Download XLSX
+          </button>
+          <button class="btn btn-email" onclick="sendEmail()">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+            Send to Manager
+          </button>
+          <button class="btn btn-reset" onclick="resetSchedule()">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4"/></svg>
+            Reset
+          </button>
+        </div>
+
+      </div>
+    </div>
+
+  </div><!-- /right -->
+</div><!-- /layout -->
+
+<div id="toast"></div>
+
+<!-- ══════════════ SCRIPT ══════════════ -->
+<script>
+const STATES       = ['off','d','n'];
+const STATE_LABELS = {off:'OFF', d:'D', n:'N'};
+const STATE_CSS    = {off:'s-off', d:'s-d', n:'s-n'};
+const DAYS_SHORT   = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const MONTHS_LONG  = ['','January','February','March','April','May','June',
+                      'July','August','September','October','November','December'];
+
+let schedule = {};
+let hardship = {};
+let bonus    = {};
+
+// Dec 2026 preset (x/cuti/brk → off)
+const DEC26_PRESET = {
+  1:'off',2:'off',3:'d',4:'d',
+  5:'off',6:'off',7:'off',8:'off',9:'off',10:'off',
+  11:'d',12:'d',13:'d',14:'n',15:'n',16:'off',17:'off',
+  18:'d',19:'d',20:'d',21:'d',22:'n',23:'n',
+  24:'off',25:'off',26:'off',27:'off',28:'off',
+  29:'d',30:'d',31:'off'
+};
+
+// ── Name → Title/Grade auto-fill ──────────────────────
+const NAME_DATA = {
+  'Ong Teck Ghee':              {title:'RTO Engineer', grade:'RTO2'},
+  'Mohd Haiqal Bin Hashim':     {title:'RTO Engineer', grade:'RTO2'},
+  'Mohamad Adri Bin Mat Junoh': {title:'RTO Engineer', grade:'RTO2'},
+  'Jau Ipui':                   {title:'RTO Engineer', grade:'RTO2'},
+  'Mohd Amiruddin Bin Abd Shukor':{title:'RTO Engineer', grade:'RTO2'},
+  'Syafiq Nazmi Bin Zainal':    {title:'RTO Engineer', grade:'RTO2'},
+  'Ilyas Bin Ismal':            {title:'RTO Engineer', grade:'RTO2'},
+  'Ahmad Yazid Aiman Bin Yahya':{title:'RTO Engineer', grade:'RTO2'},
+};
+function onNameChange(){
+  const name = document.getElementById('empName').value;
+  const data = NAME_DATA[name];
+  if(data){
+    // Works for both <input> and <select>
+    document.getElementById('empTitle').value = data.title;
+    document.getElementById('empGrade').value = data.grade;
+  }
+}
+
+// ── Init ──────────────────────────────────────────────
+(function init(){
+  const ySel = document.getElementById('selYear');
+  const y0   = new Date().getFullYear();
+  for(let y = y0-1; y <= y0+3; y++){
+    const o = document.createElement('option');
+    o.value = y; o.textContent = y;
+    if(y === 2026) o.selected = true;
+    ySel.appendChild(o);
+  }
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('checkedDate').value  = today;
+  document.getElementById('approvedDate').value = today;
+  document.getElementById('selMonth').addEventListener('change', buildCalendar);
+  document.getElementById('selYear').addEventListener('change',  buildCalendar);
+  buildCalendar();
+})();
+
+// ── Build calendar ────────────────────────────────────
+function buildCalendar(){
+  const month = +document.getElementById('selMonth').value;
+  const year  = +document.getElementById('selYear').value;
+  const days  = new Date(year, month, 0).getDate();
+  document.getElementById('schedBody').innerHTML = '';
+
+  schedule = {}; hardship = {}; bonus = {};
+  const isPreset = (year===2026 && month===12);
+  for(let d=1; d<=days; d++){
+    schedule[d] = isPreset ? (DEC26_PRESET[d]||'off') : 'off';
+    hardship[d] = 0;
+    bonus[d]    = 0;
+  }
+  for(let d=1; d<=days; d++) renderRow(d, year, month);
+  updateSummary();
+  updateTotals();
+}
+
+// ── Render one row ────────────────────────────────────
+function renderRow(d, yr, mo){
+  const year  = yr  || +document.getElementById('selYear').value;
+  const month = mo  || +document.getElementById('selMonth').value;
+  const dow   = new Date(year, month-1, d).getDay();
+  const isWE  = dow===0 || dow===6;
+  const st    = schedule[d];
+  const isWork = st==='d' || st==='n';
+
+  // description — same text for both D and N
+  const jobDesc = document.getElementById('empJob').value;
+  const descHtml = isWork
+    ? `<span style="color:#37474F">${jobDesc}</span>`
+    : '<span style="color:#B0BEC5">—</span>';
+
+  const hVal = (isWork && hardship[d]) ? hardship[d] : '';
+  const bVal = (isWork && bonus[d])    ? bonus[d]    : '';
+  const hCls = (isWork && hardship[d]>0) ? 'exp-input hrd-set' : 'exp-input';
+
+  let tr = document.getElementById('tr-'+d);
+  if(!tr){
+    tr = document.createElement('tr');
+    tr.id = 'tr-'+d;
+    document.getElementById('schedBody').appendChild(tr);
+  }
+  tr.className = isWork ? (st==='d' ? 'row-d' : 'row-n') : '';
+  tr.innerHTML = `
+    <td class="day-num">${d}</td>
+    <td class="day-name ${isWE?'weekend':''}">${DAYS_SHORT[dow]}</td>
+    <td>
+      <span class="shift-btn ${STATE_CSS[st]}" id="btn-${d}"
+            onclick="cycleState(${d})">${STATE_LABELS[st]}</span>
+    </td>
+    <td>
+      <input class="${hCls}" type="number" min="0" step="0.01"
+        id="hrd-${d}" value="${hVal}" placeholder="0.00"
+        ${isWork?'':'disabled'}
+        oninput="onHardship(${d})"/>
+    </td>
+    <td>
+      <input class="exp-input" type="number" min="0" step="0.01"
+        id="bon-${d}" value="${bVal}" placeholder="0.00"
+        ${isWork?'':'disabled'}
+        oninput="onBonus(${d})"/>
+    </td>
+    <td style="text-align:left;padding-left:9px;font-size:.77rem">${descHtml}</td>
+  `;
+}
+
+// ── Cycle shift state ─────────────────────────────────
+function cycleState(d){
+  const prev = schedule[d];
+  schedule[d] = STATES[(STATES.indexOf(prev)+1) % STATES.length];
+  if(schedule[d]==='off'){
+    hardship[d]=0; bonus[d]=0;
+  } else {
+    // auto-apply default hardship if set
+    const def = parseFloat(document.getElementById('defaultHardship').value)||0;
+    if(def>0 && !hardship[d]) hardship[d] = def;
+  }
+  renderRow(d);
+  updateSummary();
+  updateTotals();
+}
+
+// ── Apply default hardship to all working days ────────
+function applyDefaultHardship(){
+  const def = parseFloat(document.getElementById('defaultHardship').value)||0;
+  const month = +document.getElementById('selMonth').value;
+  const year  = +document.getElementById('selYear').value;
+  const days  = new Date(year, month, 0).getDate();
+  for(let d=1; d<=days; d++){
+    if(schedule[d]==='d' || schedule[d]==='n'){
+      hardship[d] = def;
+      const inp = document.getElementById('hrd-'+d);
+      if(inp){ inp.value = def||''; inp.className = def>0?'exp-input hrd-set':'exp-input'; }
+    }
+  }
+  updateTotals();
+  showToast(`✅ Hardship rate RM${def.toFixed(2)} applied to all working days`);
+}
+
+// ── Expense input handlers ────────────────────────────
+function onHardship(d){
+  hardship[d] = parseFloat(document.getElementById('hrd-'+d).value)||0;
+  const inp   = document.getElementById('hrd-'+d);
+  inp.className = hardship[d]>0 ? 'exp-input hrd-set' : 'exp-input';
+  updateTotals();
+}
+function onBonus(d){
+  bonus[d] = parseFloat(document.getElementById('bon-'+d).value)||0;
+  updateTotals();
+}
+
+function resetSchedule(){
+  // Reset target month → current month/year
+  const now = new Date();
+  document.getElementById('selMonth').value = now.getMonth()+1;
+  document.getElementById('selYear').value  = now.getFullYear();
+
+  // Reset dates to today
+  const today = now.toISOString().split('T')[0];
+  document.getElementById('checkedDate').value  = today;
+  document.getElementById('approvedDate').value = today;
+
+  // Clear hardship rate
+  document.getElementById('defaultHardship').value = '';
+
+  // Rebuild calendar (all OFF, no preset)
+  const month = now.getMonth()+1;
+  const year  = now.getFullYear();
+  const days  = new Date(year, month, 0).getDate();
+  document.getElementById('schedBody').innerHTML = '';
+  schedule = {}; hardship = {}; bonus = {};
+  for(let d=1; d<=days; d++){
+    schedule[d] = 'off';
+    hardship[d] = 0;
+    bonus[d]    = 0;
+  }
+  for(let d=1; d<=days; d++) renderRow(d, year, month);
+  updateSummary();
+  updateTotals();
+  showToast('🔄 Reset — month, dates and schedule cleared');
+}
+
+// ── Summary ───────────────────────────────────────────
+function workingDays(){
+  return Object.entries(schedule).filter(([,v])=>v==='d'||v==='n')
+    .map(([k])=>+k).sort((a,b)=>a-b);
+}
+function updateSummary(){
+  const wd = workingDays();
+  const dD = Object.entries(schedule).filter(([,v])=>v==='d').map(([k])=>+k);
+  const nD = Object.entries(schedule).filter(([,v])=>v==='n').map(([k])=>+k);
+  document.getElementById('sumHitch').textContent = wd.length;
+  document.getElementById('sumDetail').innerHTML  =
+    `Day (D): <b>${dD.length} days</b> &nbsp;|&nbsp; Night (N): <b>${nD.length} days</b>`;
+  const chips = document.getElementById('sumChips');
+  chips.innerHTML='';
+  if(dD.length) chips.innerHTML+=`<span class="chip">D: ${dD.join(', ')}</span>`;
+  if(nD.length) chips.innerHTML+=`<span class="chip">N: ${nD.join(', ')}</span>`;
+  const month=+document.getElementById('selMonth').value;
+  const year =+document.getElementById('selYear').value;
+  document.getElementById('remarkNote').textContent =
+    `Working days: ${wd.join(', ')} — ${wd.length} days on hitch for ${MONTHS_LONG[month]} ${year}.`;
+}
+
+// ── Totals ────────────────────────────────────────────
+function updateTotals(){
+  let totH=0, totB=0;
+  for(const d in schedule){
+    if(schedule[d]==='d'||schedule[d]==='n'){ totH+=hardship[d]||0; totB+=bonus[d]||0; }
+  }
+  document.getElementById('totalHardship').textContent = totH.toFixed(2);
+  document.getElementById('totalBonus').textContent    = totB.toFixed(2);
+  document.getElementById('totalGrand').textContent    = (totH+totB).toFixed(2);
+}
+
+
+// ─── EFTECH logo (from original template) ──────────────────────────────────
+const EFTECH_LOGO='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';
+
+// ─── Base XLSX template (openpyxl-generated, all styles/borders/fills exact) ─
+const BASE_TMPL='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';
+
+// ─── XML escape helper ─────────────────────────────────────────────────────
+function xEsc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+// ─── Download XLSX (template-based, uses inline MiniZip) ──────────────────
+async function downloadXLSX(){
+  try {
+  const month=+document.getElementById('selMonth').value;
+  const year=+document.getElementById('selYear').value;
+  const totalDays=new Date(year,month,0).getDate();
+  const monthStr=MONTHS_LONG[month];
+  const name=document.getElementById('empName').value;
+  const title=document.getElementById('empTitle').value;
+  const grade=document.getElementById('empGrade').value;
+  const jobBase=document.getElementById('empJob').value;
+  const loc=document.getElementById('empLoc').value;
+  const checkedBy=document.getElementById('checkedBy').value;
+  const checkedPos=document.getElementById('checkedPos').value;
+  const checkedDate=document.getElementById('checkedDate').value;
+  const approvedBy=document.getElementById('approvedBy').value;
+  const approvedPos=document.getElementById('approvedPos').value;
+  const approvedDate=document.getElementById('approvedDate').value;
+
+  // 1. Load base template
+  const zip=await MiniZip.load(Uint8Array.from(atob(BASE_TMPL),c=>c.charCodeAt(0)));
+
+  // 2. Load sheet1.xml — openpyxl uses inline strings (no sharedStrings.xml)
+  //    All text values are stored as <is><t>VALUE</t></is> directly in the sheet
+  let sh=await zip.file('xl/worksheets/sheet1.xml').async('string');
+
+  // Replace inline string placeholders <t>PLACEHOLDER</t> → <t>VALUE</t>
+  function repStr(ph,val){
+    sh=sh.split('<t>'+ph+'</t>').join('<t>'+xEsc(val)+'</t>');
+  }
+
+  repStr('__COMPANY__','EFTECH ENERGY SOLUTIONS SDN BHD');
+  repStr('__NAME__',name);
+  repStr('__TITLE__',title);
+  repStr('__GRADE__',grade);
+  repStr('__MONTH__',monthStr+' '+year);
+  repStr('__REMARKS__',jobBase+'.');
+  repStr('__CHK_BY__',checkedBy);
+  repStr('__CHK_POS__',checkedPos);
+  // Convert yyyy-mm-dd → dd/mm/yyyy for the XLSX output
+  function fmtDate(d){ const p=d.split('-'); return p.length===3?p[2]+'/'+p[1]+'/'+p[0]:d; }
+  repStr('__CHK_DATE__',fmtDate(checkedDate));
+  repStr('__APV_BY__',approvedBy);
+  repStr('__APV_POS__',approvedPos);
+  repStr('__APV_DATE__',fmtDate(approvedDate));
+
+  // Per-day job description and location
+  let hitchCnt=0;
+  for(let d=1;d<=31;d++){
+    const st=(d<=totalDays)?(schedule[d]||'off'):'off';
+    const isW=st==='d'||st==='n';
+    if(isW) hitchCnt++;
+    repStr('__J'+String(d).padStart(2,'0')+'__', isW?jobBase:'');
+    repStr('__L'+String(d).padStart(2,'0')+'__', isW?loc:'');
+  }
+
+  // 3. Update numeric cell values in the same sheet XML
+
+  // Helper: replace <v>OLD</v> for a specific cell address
+  function setCellNum(addr, val){
+    // Match <c r="ADDR" ...><v>anything</v> and replace value
+    sh=sh.replace(
+      new RegExp('(<c r="'+addr+'"[^>]*>)<v>[^<]*</v>'),
+      '$1<v>'+val+'</v>'
+    );
+  }
+
+  // Per-day: hitch count (B col), hardship (G col), bonus (H col)
+  hitchCnt=0;
+  for(let d=1;d<=31;d++){
+    const r=11+d;
+    const st=(d<=totalDays)?(schedule[d]||'off'):'off';
+    const isW=st==='d'||st==='n';
+    if(isW) hitchCnt++;
+    setCellNum('B'+r, isW?hitchCnt:0);
+    setCellNum('G'+r, isW?(hardship[d]||0):0);
+    setCellNum('H'+r, isW?(bonus[d]||0):0);
+  }
+
+  // ── Trim extra day rows for months shorter than 31 days ──────────────
+  if(totalDays < 31){
+    const extra = 31 - totalDays;
+
+    // Remove rows AND their C{r}:E{r} merge refs for extra days (highest first)
+    for(let d=31; d>totalDays; d--){
+      const rn = 11+d;
+      // Remove the row element
+      const rt='<row r="'+rn+'"';
+      const si=sh.indexOf(rt);
+      if(si!==-1){ const ei=sh.indexOf('</row>',si)+6; sh=sh.slice(0,si)+sh.slice(ei); }
+      // Remove the merge cell reference for that row (C{rn}:E{rn})
+      sh=sh.replace('<mergeCell ref="C'+rn+':E'+rn+'"/>','');
+    }
+
+    // Fix mergeCells count (subtract the removed merges)
+    const mcM=sh.match(/<mergeCells count="(\d+)">/);
+    if(mcM) sh=sh.replace('<mergeCells count="'+mcM[1]+'">','<mergeCells count="'+(+mcM[1]-extra)+'">');
+
+    // Renumber rows 43–51 — process ASCENDING (43→42, 44→43 …)
+    // so each row's cells are cleared before the next iteration references them
+    for(let oldR=43; oldR<=51; oldR++){
+      const newR=oldR-extra;
+      sh=sh.replace('<row r="'+oldR+'"','<row r="'+newR+'"');
+      ['A','B','C','D','E','F','G','H'].forEach(c=>{
+        sh=sh.replace(new RegExp('(<c r="'+c+')'+oldR+'(")', 'g'),'$1'+newR+'$2');
+      });
+    }
+
+    // Update SUM and total formulas to reference correct last data row
+    const lDR=11+totalDays, sR=lDR+1;
+    sh=sh.replace('SUM(G12:G42)','SUM(G12:G'+lDR+')');
+    sh=sh.replace('SUM(H12:H42)','SUM(H12:H'+lDR+')');
+    sh=sh.replace('G43+H43','G'+sR+'+H'+sR);
+
+    // Update merge cell refs for rows that shifted up
+    const tR=lDR+2, sigR=lDR+7;
+    sh=sh.replace('G44:H44','G'+tR+':H'+tR);
+    sh=sh.replace('E49:F49','E'+sigR+':F'+sigR);
+    sh=sh.replace('E50:F50','E'+(sigR+1)+':F'+(sigR+1));
+    sh=sh.replace('E51:F51','E'+(sigR+2)+':F'+(sigR+2));
+
+    // Update sheet dimension attribute
+    sh=sh.replace('A1:H51','A1:H'+(sigR+2));
+  }
+
+  // ── Set column widths (A–H) ─────────────────────────────────────────────
+  const colsXml =
+    '<cols>'+
+    '<col min="1" max="1" width="10.56" customWidth="1"/>'+
+    '<col min="2" max="2" width="9.44"  customWidth="1"/>'+
+    '<col min="3" max="3" width="39"    customWidth="1"/>'+
+    '<col min="4" max="4" width="18"    customWidth="1"/>'+
+    '<col min="5" max="5" width="10"    customWidth="1"/>'+
+    '<col min="6" max="6" width="37.89" customWidth="1"/>'+
+    '<col min="7" max="7" width="19.89" customWidth="1"/>'+
+    '<col min="8" max="8" width="17"    customWidth="1"/>'+
+    '</cols>';
+  // Replace existing <cols>…</cols> block, or insert before <sheetData>
+  if(/<cols[\s>]/.test(sh)){
+    sh=sh.replace(/<cols[\s\S]*?<\/cols>/,colsXml);
+  } else {
+    sh=sh.replace('<sheetData>',colsXml+'<sheetData>');
+  }
+
+  // ── Page margins (all zero) + horizontal centering + landscape ───────────
+  const printOpts='<printOptions horizontalCentered="1"/>';
+  const pageMgn='<pageMargins left="0" right="0" top="0" bottom="0" header="0" footer="0"/>';
+  const pageSetup='<pageSetup orientation="landscape" fitToWidth="1" fitToHeight="1"/>';
+  // Replace existing pageMargins
+  sh=sh.replace(/<pageMargins[^/]*\/>/,pageMgn);
+  // Insert printOptions before pageMargins (if not already present)
+  if(sh.indexOf('<printOptions')===-1){
+    sh=sh.replace(pageMgn,printOpts+pageMgn);
+  }
+  // Replace existing pageSetup or append after pageMargins
+  if(/<pageSetup[\s>]/.test(sh)){
+    sh=sh.replace(/<pageSetup[^/]*\/>/,pageSetup);
+  } else {
+    sh=sh.replace(pageMgn,pageMgn+pageSetup);
+  }
+  // Enable fitToPage scaling via sheetPr (required for fitToWidth/Height to take effect)
+  // Template uses <pageSetUpPr/> (capital U) — replace it with fitToPage="1"
+  if(sh.indexOf('<pageSetUpPr')===-1){
+    // No pageSetUpPr at all — inject inside existing sheetPr or wrap in new sheetPr
+    if(sh.indexOf('<sheetPr')===-1){
+      sh=sh.replace('<sheetViews>','<sheetPr><pageSetUpPr fitToPage="1"/></sheetPr><sheetViews>');
+    } else {
+      sh=sh.replace('</sheetPr>','<pageSetUpPr fitToPage="1"/></sheetPr>');
+    }
+  } else {
+    // Replace existing <pageSetUpPr/> or <pageSetUpPr .../> with fitToPage version
+    sh=sh.replace(/<pageSetUpPr[^/]*\/>/,'<pageSetUpPr fitToPage="1"/>');
+  }
+
+  zip.file('xl/worksheets/sheet1.xml',sh);
+
+  // 4. Inject EFTECH logo
+  await _injectLogo(zip);
+
+  // 5. Download
+  const fname='Timesheet_'+name.replace(/ /g,'_')+'_'+monthStr+'_'+year+'.xlsx';
+  const blob=await zip.generateAsync({
+    type:'blob',
+    mimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    compression:'DEFLATE'
+  });
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url; a.download=fname;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast('✅ '+fname+' downloaded!');
+  } catch(err) {
+    console.error('Download error:', err);
+    showToast('❌ Download failed: '+err.message);
+  }
+}
+
+// ─── Logo injection (clean, no other XML manipulation needed) ─────────────
+async function _injectLogo(zip){
+  // Add image file
+  zip.file('xl/media/image1.jpg',
+    Uint8Array.from(atob(EFTECH_LOGO),c=>c.charCodeAt(0)));
+
+  // Drawing XML (exact anchor from reference)
+  zip.file('xl/drawings/drawing1.xml',
+    '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'+
+    '<xdr:wsDr xmlns:xdr="http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing"'+
+    ' xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">'+
+    '<xdr:oneCellAnchor>'+
+    '<xdr:from><xdr:col>5</xdr:col><xdr:colOff>1276350</xdr:colOff>'+
+    '<xdr:row>0</xdr:row><xdr:rowOff>19050</xdr:rowOff></xdr:from>'+
+    '<xdr:ext cx="4362450" cy="771525"/>'+
+    '<xdr:pic><xdr:nvPicPr>'+
+    '<xdr:cNvPr id="2" name="image1.jpg"/>'+
+    '<xdr:cNvPicPr preferRelativeResize="0"/>'+
+    '</xdr:nvPicPr><xdr:blipFill>'+
+    '<a:blip xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"'+
+    ' r:embed="rId1" cstate="print"/>'+
+    '<a:stretch><a:fillRect/></a:stretch>'+
+    '</xdr:blipFill><xdr:spPr>'+
+    '<a:prstGeom prst="rect"><a:avLst/></a:prstGeom><a:noFill/>'+
+    '</xdr:spPr></xdr:pic>'+
+    '<xdr:clientData fLocksWithSheet="0"/>'+
+    '</xdr:oneCellAnchor></xdr:wsDr>');
+
+  // Drawing rels
+  zip.file('xl/drawings/_rels/drawing1.xml.rels',
+    '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'+
+    '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'+
+    '<Relationship Id="rId1"'+
+    ' Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image"'+
+    ' Target="../media/image1.jpg"/></Relationships>');
+
+  // Sheet rels → add drawing reference
+  const sp='xl/worksheets/_rels/sheet1.xml.rels';
+  const sf=zip.file(sp);
+  let sr=sf?await sf.async('string'):'';
+  if(sr && !sr.includes('drawing')){
+    sr=sr.replace('</Relationships>',
+      '<Relationship Id="rIdDrw"'+
+      ' Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/drawing"'+
+      ' Target="../drawings/drawing1.xml"/></Relationships>');
+  } else if(!sr){
+    sr='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'+
+      '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'+
+      '<Relationship Id="rIdDrw"'+
+      ' Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/drawing"'+
+      ' Target="../drawings/drawing1.xml"/></Relationships>';
+  }
+  zip.file(sp,sr);
+
+  // Add drawing tag to sheet1.xml
+  let shX=await zip.file('xl/worksheets/sheet1.xml').async('string');
+  if(!shX.includes('<drawing')){
+    if(!shX.includes('xmlns:r='))
+      shX=shX.replace('<worksheet ','<worksheet xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" ');
+    shX=shX.replace('</worksheet>','<drawing r:id="rIdDrw"/></worksheet>');
+    zip.file('xl/worksheets/sheet1.xml',shX);
+  }
+
+  // Content types
+  let ct=await zip.file('[Content_Types].xml').async('string');
+  if(!ct.includes('drawing+xml'))
+    ct=ct.replace('</Types>',
+      '<Override PartName="/xl/drawings/drawing1.xml"'+
+      ' ContentType="application/vnd.openxmlformats-officedocument.drawing+xml"/>'+
+      '</Types>');
+  if(!ct.includes('image/jpeg')&&!ct.includes('Extension="jpg"'))
+    ct=ct.replace('</Types>',
+      '<Default Extension="jpg" ContentType="image/jpeg"/></Types>');
+  zip.file('[Content_Types].xml',ct);
+}
+
+
+// ── Send Email ────────────────────────────────────────
+function sendEmail(){
+  const month    = +document.getElementById('selMonth').value;
+  const year     = +document.getElementById('selYear').value;
+  const monthStr = MONTHS_LONG[month];
+  const name     = document.getElementById('empName').value;
+  const mgrEmail = document.getElementById('mgrEmail').value;
+  if(!mgrEmail){ showToast('⚠️ Please enter manager email first'); return; }
+  const wd = workingDays();
+  let totH=0,totB=0;
+  for(const d of wd){ totH+=hardship[d]||0; totB+=bonus[d]||0; }
+  const sub = encodeURIComponent(`Timesheet Submission – ${name} – ${monthStr} ${year}`);
+  const body = encodeURIComponent(
+    `Dear Manager,\n\nPlease find attached my monthly timesheet for ${monthStr} ${year}.\n\n`+
+    `Summary:\n`+
+    `• Employee      : ${name}\n`+
+    `• Month         : ${monthStr} ${year}\n`+
+    `• Days on Hitch : ${wd.length}\n`+
+    `• Working Days  : ${wd.join(', ')}\n`+
+    `• Hardship (RM) : ${totH.toFixed(2)}\n`+
+    `• Bonus (RM)    : ${totB.toFixed(2)}\n`+
+    `• Grand Total   : RM ${(totH+totB).toFixed(2)}\n\n`+
+    `Kindly review and approve.\n\nBest regards,\n${name}\nRTO Engineer, RTOC`);
+  downloadXLSX().then(()=>{
+    window.location.href=`mailto:${mgrEmail}?subject=${sub}&body=${body}`;
+    showToast('📧 Email client opened — please attach the downloaded XLSX');
+  });
+}
+
+// ── Toast ─────────────────────────────────────────────
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),3500);
+}
+</script>
+</body>
+</html>
